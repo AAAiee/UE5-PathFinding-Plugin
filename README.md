@@ -1,61 +1,42 @@
-# SimpleNav3D & Object Pool – Unreal Engine 5 Gameplay Systems
+# SimpleNav3D - Unreal Engine 5 3D Pathfinding Demo
 
-A small Unreal Engine 5 project showcasing **two reusable gameplay systems** implemented in modern C++:
+SimpleNav3D is a small Unreal Engine 5.6 C++ project focused on one gameplay-system problem: 3D pathfinding through a volumetric grid.
 
-- **SimpleNav3D** – a lightweight 3D grid navigation volume with A* pathfinding and an octree-based blocker query.
-- **Object Pool** – a generic pooling system for reusing Actors/objects to avoid repeated allocations and `SpawnActor` calls.
+The repo contains a drop-in `SimpleNav3D` plugin plus a minimal Third Person template project that opens directly into a demo map. The demo map contains obstacles, a 3D navigation volume, an agent, and a destination marker. Press Play and the demo agent asks the plugin for a path, draws the path, and follows it.
 
-Both systems are written as UE plugins and designed to be dropped into a game project.
-This project follows the overall architecture posted in this repo: https://github.com/hpnever/NavAndPool
+## Demo
 
----
+<a href="https://youtu.be/LV2WPoSnrL8">
+  <img src="https://img.youtube.com/vi/LV2WPoSnrL8/maxresdefault.jpg" alt="SimpleNav3D demo video" width="720">
+</a>
 
-## 1. Overview
+[Watch the demo on YouTube](https://youtu.be/LV2WPoSnrL8)
 
-This repository is focused on **systems-level gameplay code**, not on building a full game.  
+## What Is Included
 
-The goal is to demonstrate that I can:
+- `Plugins/SimpleNav3D`: the pathfinding plugin.
+- `Content/Nav3D_Demo.umap`: the example map.
+- `Source/TP_ThirdPerson/NavDemo`: small C++ demo actors that call the plugin at runtime.
+- A clean UE 5.6 Third Person template shell used only to host the plugin demo.
 
-- Design and implement **reusable engine subsystems** in C++.
-- Work comfortably with **Unreal’s API**, memory management, and math.
-- Apply **classic CS concepts** (A*, BFS, spatial partitioning, pooling) to game problems.
+## Core Idea
 
-If you’re a hiring manager or gameplay programmer, this project is meant to be a quick, concrete sample of how I write engine-facing gameplay code.
+`AOctNavVolume3D` builds a regular 3D grid inside an actor volume. Each cell is represented by a `NavNode`, and neighbouring cells are linked into a graph. At runtime, `FindPath` converts world positions to grid nodes, checks blocked regions, runs A*, and returns world-space waypoints.
 
----
+The plugin also builds an octree over the volume for coarse blocker queries, then uses Unreal collision overlap checks to reject occupied cells for the requested agent size.
 
-## 2. What’s Included
+## Main Features
 
-### 🧭 SimpleNav3D – 3D Navigation Volume
+- 3D grid navigation volume with configurable `DivisionsX`, `DivisionsY`, `DivisionsZ`, and `DivisionSize`.
+- A* pathfinding over a custom 3D node graph.
+- BFS nearest-free-node search when the goal is inside blocked space.
+- Octree-backed blocked-cell queries.
+- Runtime debug grid rendering with `UProceduralMeshComponent`.
+- C++ and Blueprint-callable pathfinding API.
 
-A custom 3D navigation system based on a **voxel-like grid**:
-
-- **3D grid volume** defined by `DivisionsX / Y / Z` and `DivisionSize`.
-- **NavNode graph**:
-  - Each cell is a `NavNode` with integer grid coordinates.
-  - Neighbours are precomputed based on a configurable shared-axis rule.
-- **A* pathfinding**:
-  - Uses a `std::priority_queue` with a custom `NavNodeCompare`.
-  - Heuristic based on Euclidean distance in grid space.
-- **Octree for spatial queries**:
-  - `FOctreeNode` hierarchy built over the navigation volume.
-  - Each leaf stores a `bBlocked` flag using UE collision overlap tests.
-  - `QueryPointBlocked` quickly rejects nodes inside blocked boxes.
-- **Nearest free node search**:
-  - BFS (`TQueue`) from a starting node to find the closest valid, non-overlapping node.
-  - Avoids paths starting/ending inside walls or other blocking geometry.
-- **Debug visualization**:
-  - Grid lines rendered at runtime via `UProceduralMeshComponent`.
-  - Color and line thickness configurable in the editor.
-
-Core public API lives in `AOctNavVolume3D`:
+## Public API
 
 ```cpp
-// Convert between world and grid coordinates
-FIntVector ConvertWorldLocationToGridCoordinates(const FVector& WorldLocation);
-FVector ConvertGridCoordinatesToWorldLocation(const FIntVector& GridCoordinates);
-
-// Compute a navigation path
 bool FindPath(
     const FVector& InStart,
     const FVector& InDestination,
@@ -68,99 +49,34 @@ bool FindPath(
 );
 ```
 
----
-
-### ♻️ Object Pool – Reusable Actor/Object Pooling(Working In Progress, Example usages will be added later)
-
-A generic **object pooling system** for Unreal, designed to:
-
-- Reduce repeated `NewObject` / `SpawnActor` calls.
-- Reuse existing instances for effects, projectiles, temporary actors, etc.
-- Provide a **simple C++ and Blueprint-friendly API**.
-
-High-level features:
-
-- Pre-warm pools with a configurable initial size.
-- Borrow / return objects at runtime.
-- Optional auto-return based on game logic (e.g. on hit, on lifetime expiry).
-- Designed to be **data-driven** and reusable across multiple projects.
-
-
----
-
-## 3. Technical Highlights
-
-This project demonstrates:
-
-- **Modern C++ in Unreal**
-  - Usage of STL containers (`std::vector`, `std::priority_queue`, `std::unordered_map`, `std::unordered_set`) where it makes sense.
-  - Lambda expressions for small, focused helpers (e.g., neighbour updates, quad creation).
-  - Clear ownership and cleanup (`new[]` / `delete[]` for `NavNodes`, recursive destructor for `FOctreeNode`).
-
-- **Algorithms & Data Structures**
-  - **A*** algorithm on a custom graph (`NavNode` grid).
-  - **BFS** for nearest free node search.
-  - **Octree** for spatial partitioning and fast blocker queries.
-  - **Object pooling** pattern to minimize allocations and improve runtime performance.
-
-- **Unreal Engine 5 Integration**
-  - `AActor`-based navigation volume exposed to editor & Blueprints.
-  - `UProceduralMeshComponent` used for debug grid rendering.
-  - UE collision queries (`OverlapAnyTestByObjectType`, `OverlapMultiByObjectType`) for blocked node / box detection.
-  - Configurable properties via `UPROPERTY` with categories and clamping.
-  - Editor-only validation logs (`WITH_EDITOR` checks for rotation/scale).
-
----
-
-## 4. Example Usage
-
-### 4.1 Using the 3D Nav Volume in Gameplay
-
-1. Place an `OctNavVolume3D` actor in the level.
-2. Set `DivisionsX / Y / Z` and `DivisionSize` to cover your navigable space.
-3. Configure collision channels used to determine blocked cells.
-4. At runtime, call `FindPath` from C++ (or a wrapper Blueprint function) to get a list of waypoints:
+Example use:
 
 ```cpp
 TArray<FVector> Path;
-if (NavVolume->FindPath(StartLocation, TargetLocation, ObjectTypes, nullptr, Path, ControlledPawn))
+if (NavVolume->FindPath(StartLocation, TargetLocation, ObjectTypes, nullptr, Path, Agent))
 {
-    // Follow Path array with your movement logic
+    // Follow the returned world-space waypoints.
 }
 ```
 
-The function internally:
-
-- Snap start/destination to grid.
-- Adjusts the goal if it’s inside a blocked region (octree + overlap check).
-- Runs A* on the 3D grid graph.
-- Returns a list of world-space positions for the AI to follow.
-
----
-
-## 6. Getting Started
-
-> **Engine Version:** Unreal Engine 5.x  
+## Running The Demo
 
 1. Clone the repository.
-2. Generate project files (`.uproject` → “Generate Visual Studio project files”).
-3. Build the project in your IDE.
-4. Open the project in the Unreal Editor.
-5. Enable the **SimpleNav3D** and **ObjectPool** plugins if they aren’t already enabled.
-6. Open the example map (if provided) or:
-   - Drag an `OctNavVolume3D` into the level.
-   - Set grid/division settings.
-   - Hook pathfinding and pooling into your AI / gameplay code.
+2. Make sure Git LFS files are pulled:
 
----
+   ```bash
+   git lfs pull
+   ```
 
-## 7. What This Project Says About Me
+3. Open `PluginTest.uproject` with Unreal Engine 5.6.
+4. If prompted, rebuild project modules.
+5. The project opens to `/Game/Nav3D_Demo`.
+6. Press Play.
 
-- Comfortable with **low-level gameplay systems** (navigation, pooling, spatial structures).
-- Practical experience combining **CS fundamentals** with **UE5 engine APIs**.
-- Focus on **readable, documented, and reusable C++** suitable for production codebases.
-- Interested in **gameplay programming**, **AI navigation**, and **engine-adjacent tools** rather than only one-off game jam prototypes.
+If the map does not open automatically, open `Content/Nav3D_Demo.umap` manually.
 
----
+## Notes
 
-
+- The demo map intentionally does not include final lighting. Add lighting manually in the editor for presentation captures.
+- `SimpleNav3D` is a gameplay/AI programming sample, not a replacement for Unreal's built-in NavMesh.
+- The plugin is useful for flying, swimming, zero-gravity, or other movement where a ground-only navmesh is not the right representation.

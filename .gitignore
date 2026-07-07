@@ -28,6 +28,7 @@ Plugins/**/Binaries/*
 *.tmp
 *.log
 *.vsconfig
+/demo.mkv
 
 # Unreal auto-saves
 *.autosave

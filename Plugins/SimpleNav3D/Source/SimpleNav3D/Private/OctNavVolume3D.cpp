@@ -27,7 +27,7 @@ static UMaterial* GridMaterial = nullptr;
 
 //
 // ============================================================================
-// AOctNavVolume3D ¨C 3D Grid Navigation Volume with Octree-Based Occlusion
+// AOctNavVolume3D â€“ 3D Grid Navigation Volume with Octree-Based Occlusion
 // ============================================================================
 // - Builds a 3D navigation grid composed of NavNodes
 // - Visualizes the grid with a procedural mesh (debug grid)
@@ -66,7 +66,6 @@ AOctNavVolume3D::AOctNavVolume3D()
 	// Load debug grid material from plugin content
 	// -------------------------------------------------------
 	static ConstructorHelpers::FObjectFinder<UMaterial> MaterialFinder(TEXT("Material'/SimpleNav3D/M_Nav.M_Nav'"));
-
 	checkf(MaterialFinder.Succeeded(), TEXT("Could not find grid material for SimpleNav3D plugin. Make sure the SimpleNav3D plugin is correctly installed."));
 
 	GridMaterial = MaterialFinder.Object;
@@ -261,7 +260,7 @@ FBox AOctNavVolume3D::GetWorldAlignedVolumeBox()
 		FVector(GetGridXBound(), GetGridYBound(), GetGridZBound())
 	);
 
-	// Only apply translation ¨C ignore rotation & scale to keep grid axis-aligned to world
+	// Only apply translation â€“ ignore rotation & scale to keep grid axis-aligned to world
 	const FVector WorldOffset = GetActorLocation();
 
 	return LocalBox.ShiftBy(WorldOffset);
@@ -529,7 +528,7 @@ bool AOctNavVolume3D::QueryPointBlocked(const FVector& WorldPoint) const
 
 //
 // ============================================================================
-// Editor Construction ¨C Build Debug Grid Mesh
+// Editor Construction â€“ Build Debug Grid Mesh
 // ============================================================================
 //
 
