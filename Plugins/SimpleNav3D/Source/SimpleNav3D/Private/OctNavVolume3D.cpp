@@ -12,10 +12,6 @@
 #include <utility>
 
 #include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
-
-#include "Components/CapsuleComponent.h"
-#include "GameFramework/Character.h"
 #include "GameFramework/Actor.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
@@ -205,6 +201,15 @@ void AOctNavVolume3D::CreateLine(const FVector& InStart, const FVector& InEnd, c
 			OutTriangles.Add(BaseIndex + 2);
 			OutTriangles.Add(BaseIndex + 3);
 			OutTriangles.Add(BaseIndex + 1);
+
+			// Add reverse winding so the debug grid remains visible from both sides.
+			OutTriangles.Add(BaseIndex + 0);
+			OutTriangles.Add(BaseIndex + 1);
+			OutTriangles.Add(BaseIndex + 2);
+
+			OutTriangles.Add(BaseIndex + 1);
+			OutTriangles.Add(BaseIndex + 3);
+			OutTriangles.Add(BaseIndex + 2);
 		};
 
 	AddQuad(SideDir1);
@@ -465,7 +470,20 @@ FOctreeNode* AOctNavVolume3D::BuildOctree(
 		bAllBlocked &= (TreeNode->Children[i]->bIsLeaf && TreeNode->Children[i]->bBlocked);
 	}
 
-	// TODO: If all children are blocked leaves, we can mark this node as a blocked leaf and delete its children for memory optimization.
+	// Static-region compression: if every child is already a blocked leaf,
+	// collapse this branch into one blocked leaf to reduce memory and query depth.
+	if (bAllBlocked)
+	{
+		TreeNode->bIsLeaf = true;
+		TreeNode->bBlocked = true;
+
+		for (FOctreeNode*& Child : TreeNode->Children)
+		{
+			delete Child;
+			Child = nullptr;
+		}
+	}
+
 	return TreeNode;
 }
 
