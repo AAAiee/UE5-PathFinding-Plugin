@@ -12,12 +12,6 @@ The repo contains a drop-in `SimpleNav3D` plugin plus a minimal Third Person tem
 
 [Watch the demo on YouTube](https://youtu.be/LV2WPoSnrL8)
 
-## What Is Included
-
-- `Plugins/SimpleNav3D`: the pathfinding plugin.
-- `Content/Nav3D_Demo.umap`: the example map.
-- `Source/TP_ThirdPerson/NavDemo`: small C++ demo actors that call the plugin at runtime.
-- A clean UE 5.6 Third Person template shell used only to host the plugin demo.
 
 ## Core Idea
 
@@ -29,7 +23,7 @@ The plugin also builds an octree over the volume for coarse blocker queries, the
 
 - 3D grid navigation volume with configurable `DivisionsX`, `DivisionsY`, `DivisionsZ`, and `DivisionSize`.
 - A* pathfinding over a custom 3D node graph.
-- BFS nearest-free-node search when the goal is inside blocked space.
+- BFS nearest-free-node search when the goal is inside the blocked space.
 - Octree-backed blocked-cell queries.
 - Runtime debug grid rendering with `UProceduralMeshComponent`.
 - C++ and Blueprint-callable pathfinding API.
@@ -76,7 +70,5 @@ if (NavVolume->FindPath(StartLocation, TargetLocation, ObjectTypes, nullptr, Pat
 If the map does not open automatically, open `Content/Nav3D_Demo.umap` manually.
 
 ## Notes
-
-- The demo map intentionally does not include final lighting. Add lighting manually in the editor for presentation captures.
 - `SimpleNav3D` is a gameplay/AI programming sample, not a replacement for Unreal's built-in NavMesh.
 - The plugin is useful for flying, swimming, zero-gravity, or other movement where a ground-only navmesh is not the right representation.
